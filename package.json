@@ -1,0 +1,29 @@
+{
+  "name": "tesla-park-support",
+  "version": "1.0.0",
+  "description": "users_support",
+  "main": "server.js",
+  "scripts": {
+    "start": "tesla_park_bot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eNamid/TeslaParkSupport.git"
+  },
+  "keywords": [
+    "tesla",
+    "cars",
+    "support"
+  ],
+  "author": "eNamid",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eNamid/TeslaParkSupport/issues"
+  },
+  "homepage": "https://github.com/eNamid/TeslaParkSupport#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.0.1",
+    "node-telegram-bot-api": "^0.61.0"
+  }
+}
