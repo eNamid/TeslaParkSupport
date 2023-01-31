@@ -56,6 +56,11 @@ bot.callbackQuery('call_tesla', async (ctx) => {
   });
 });
 
+bot.callbackQuery('call_oper', async (ctx) => {
+  console.log(ctx.callbackQuery)
+  bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.callbackQuery.from.username} відправив заявку.`);
+});
+
 // Volkswagen Group
 bot.callbackQuery('call_volks', async (ctx) => {
   bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
@@ -98,3 +103,6 @@ if (process.env.NODE_ENV === "production") {
  
   bot.start();
 }
+
+
+

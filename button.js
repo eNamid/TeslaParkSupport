@@ -9,6 +9,7 @@ const menu = new InlineKeyboard()
 
 const tesla = new InlineKeyboard()
     .url('Як зарядити автомобіль?', 'https://youtu.be/wYeaMqij_vM').row()
+    .text('Зробити запит', 'call_oper').row()
     .text('<<-- Головне меню -->>', 'back_page');
 
 const volkswagen = new InlineKeyboard()
