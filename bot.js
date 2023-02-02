@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { Bot, InputFile, InlineKeyboard, } = require("grammy");
-const { menu, tesla, volkswagen, honda, other } = require('./button');
+const { Bot, InputFile, } = require("grammy");
+const { menu, tesla, volkswagen, honda, other, call_back, } = require('./button');
+const { StatelessQuestion } = require('@grammyjs/stateless-question');
 const { type } = require('os');
 const { webhookCallback, } = require('grammy');
 const express = require('express');
@@ -15,17 +16,17 @@ const hon = new InputFile('./imagine/hon.jpg');
 
 const bot = new Bot(process.env.TELEGRAM_TOKEN || "5882418082:AAHjEfquIghgXsE-IwJO81rjF_NKbU3see8");
 
-const BOT_DEVELOPER = 353785249; // ідентифікація розробника
+// const BOT_DEVELOPER = 353785249; // ідентифікація розробника
 
-bot.use(async (ctx, next) => {
-  // Змінити контекстний об’єкт тут, встановивши конфігурацію.
-  ctx.config = {
-    botDeveloper: BOT_DEVELOPER,
-    isDeveloper: ctx.from?.id === BOT_DEVELOPER,
-  };
-  // Запуск інших обробників
-  await next();
-});
+// bot.use(async (ctx, next) => {
+//   // Змінити контекстний об’єкт тут, встановивши конфігурацію.
+//   ctx.config = {
+//     botDeveloper: BOT_DEVELOPER,
+//     isDeveloper: ctx.from?.id === BOT_DEVELOPER,
+//   };
+//   // Запуск інших обробників
+//   await next();
+// });
 
 // Start Group
 bot.command ("start", async (ctx) => {
@@ -56,9 +57,16 @@ bot.callbackQuery('call_tesla', async (ctx) => {
   });
 });
 
+const question = new StatelessQuestion('quest', ctx => {
+  bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}`);
+});
+
+bot.use(question.middleware());
+
 bot.callbackQuery('call_oper', async (ctx) => {
-  console.log(ctx.callbackQuery)
-  bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.callbackQuery.from.username} відправив заявку.`);
+    question.replyWIthMarkdown(ctx, 'Напишіть своє питання', { 
+      reply_markup: { force_reply: true },
+    });
 });
 
 // Volkswagen Group
@@ -106,3 +114,15 @@ if (process.env.NODE_ENV === "production") {
 
 
 
+// bot.callbackQuery('call_oper', async (ctx) => {
+//   bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.callbackQuery.from.username} відправив питання: ${ctx.callbackQuery.from.message}`);
+//   console.log(ctx.callbackQuery.from.message);
+// });
+
+// bot.callbackQuery('call_oper', async (ctx) => {
+//   bot.api.editMessageCaption(ctx.chat.id, ctx.msg.message_id, {
+//     caption: 'Надішліть питання і наш оператор відповість вам найближчим часом. \n 👇👇👇',
+//   }, {
+//     reply_markup: { force_reply: true },
+//   });
+// });

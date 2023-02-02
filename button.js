@@ -1,5 +1,6 @@
 'use strict'
-const { InlineKeyboard, } = require("grammy");
+const { InlineKeyboard, Keyboard, } = require('grammy');
+const { StatelessQuestion } = require('@grammyjs/stateless-question');
 
 const menu = new InlineKeyboard()
     .text('TESLA', 'call_tesla').row()
@@ -20,9 +21,17 @@ const honda = new InlineKeyboard()
 
 const other = new InlineKeyboard()
     .text('<<-- Головне меню -->>', 'back_page');
-  
+
+const call_back = new InlineKeyboard()
+    .text('<<-- Головне меню -->>', 'back_page');
+
+// const question = new StatelessQuestion('quest', ctx => {
+//     bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}`);
+// });
+
 module.exports = { menu, 
     tesla, 
     volkswagen, 
     honda, 
-    other };
+    other, 
+    call_back };
