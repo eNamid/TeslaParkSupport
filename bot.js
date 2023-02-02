@@ -1,10 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const { Bot, InputFile, } = require("grammy");
+const { Bot, InputFile, webhookCallback, } = require("grammy");
 const { menu, tesla, volkswagen, honda, other, call_back, } = require('./button');
 const { StatelessQuestion } = require('@grammyjs/stateless-question');
 const { type } = require('os');
-const { webhookCallback, } = require('grammy');
 const express = require('express');
 
 const app = express();
@@ -64,7 +63,7 @@ const question = new StatelessQuestion('quest', ctx => {
 bot.use(question.middleware());
 
 bot.callbackQuery('call_oper', async (ctx) => {
-    question.replyWIthMarkdown(ctx, 'Напишіть своє питання', { 
+    question.replyWithMarkdown(ctx, 'Напишіть своє питання', { 
       reply_markup: { force_reply: true },
     });
 });
