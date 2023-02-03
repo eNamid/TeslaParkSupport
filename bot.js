@@ -125,11 +125,13 @@ bot.callbackQuery('call_other', async (ctx) => {
 });
 
 bot.callbackQuery('call_del', async (ctx) => {
-    const text = ctx.msg.text.split(' ');
-    const username = text.find('@').slice(-1);
-    console.log(username)
+    const username = ctx.msg.text
+    .split(' ')
+    .find(e => e.includes('@'))
+    .slice(1);
 
-    await users.delete(username);
+    console.log(username);
+
     bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив ${ctx.msg.from.username}`)
 })
 
