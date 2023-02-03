@@ -1,10 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const { Bot, InputFile, webhookCallback, } = require("grammy");
-const { menu, tesla, volkswagen, honda, other, call_back, } = require('./button');
+const { menu, tesla, volkswagen, honda, other, del, } = require('./button');
 const { StatelessQuestion } = require('@grammyjs/stateless-question');
 const { type } = require('os');
 const express = require('express');
+const CyclicDb = require("@cyclic.sh/dynamodb");
+const db = CyclicDb("real-rose-macaw-hatCyclicDB");
+
+const users = db.collection('users');
 
 const app = express();
 
@@ -15,17 +19,17 @@ const hon = new InputFile('./imagine/hon.jpg');
 
 const bot = new Bot(process.env.TELEGRAM_TOKEN || "5882418082:AAHjEfquIghgXsE-IwJO81rjF_NKbU3see8");
 
-// const BOT_DEVELOPER = 353785249; // ідентифікація розробника
+const BOT_DEVELOPER = 353785249; // ідентифікація розробника
 
-// bot.use(async (ctx, next) => {
-//   // Змінити контекстний об’єкт тут, встановивши конфігурацію.
-//   ctx.config = {
-//     botDeveloper: BOT_DEVELOPER,
-//     isDeveloper: ctx.from?.id === BOT_DEVELOPER,
-//   };
-//   // Запуск інших обробників
-//   await next();
-// });
+bot.use(async (ctx, next) => {
+  // Змінити контекстний об’єкт тут, встановивши конфігурацію.
+  ctx.config = {
+    botDeveloper: BOT_DEVELOPER,
+    isDeveloper: ctx.from?.id === BOT_DEVELOPER,
+  };
+  // Запуск інших обробників
+  await next();
+});
 
 // Start Group
 bot.command ("start", async (ctx) => {
@@ -56,8 +60,23 @@ bot.callbackQuery('call_tesla', async (ctx) => {
   });
 });
 
-const question = new StatelessQuestion('quest', ctx => {
-  bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}`);
+const question = new StatelessQuestion('quest', async ctx => {
+  const key = String(ctx.chat.id);
+  const user = await users.get(key);
+  if(user) {
+    const { message } = user.props;
+    bot.api.sendMessage(ctx.chat.id, 'Ваш запить вже обробляють, зачекайте будь ласка.');
+  }
+  else {
+     bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}`, {
+      reply_markup: del,
+     });
+  }
+  await users.set(key, {
+    message: ctx.msg.text,
+  })
+
+  console.log(user);
 });
 
 bot.use(question.middleware());
@@ -89,6 +108,7 @@ bot.callbackQuery('call_honda', async (ctx) => {
     reply_markup: honda,
   });
 });
+
 // Other Group
 bot.callbackQuery('call_other', async (ctx) => {
   bot.api.editMessageCaption(ctx.chat.id, ctx.msg.message_id, {
@@ -96,6 +116,13 @@ bot.callbackQuery('call_other', async (ctx) => {
     reply_markup: other,
   });
 });
+
+bot.callbackQuery('call_del', async (ctx) => {
+  await users.delete(key);
+  bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, {
+    caption: `Звернення обробив ${ctx.msg.from.username}`,
+  })
+})
 
 if (process.env.NODE_ENV === "production") {
 
@@ -110,18 +137,3 @@ if (process.env.NODE_ENV === "production") {
  
   bot.start();
 }
-
-
-
-// bot.callbackQuery('call_oper', async (ctx) => {
-//   bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.callbackQuery.from.username} відправив питання: ${ctx.callbackQuery.from.message}`);
-//   console.log(ctx.callbackQuery.from.message);
-// });
-
-// bot.callbackQuery('call_oper', async (ctx) => {
-//   bot.api.editMessageCaption(ctx.chat.id, ctx.msg.message_id, {
-//     caption: 'Надішліть питання і наш оператор відповість вам найближчим часом. \n 👇👇👇',
-//   }, {
-//     reply_markup: { force_reply: true },
-//   });
-// });

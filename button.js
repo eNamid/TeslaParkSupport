@@ -22,16 +22,12 @@ const honda = new InlineKeyboard()
 const other = new InlineKeyboard()
     .text('<<-- Головне меню -->>', 'back_page');
 
-const call_back = new InlineKeyboard()
-    .text('<<-- Головне меню -->>', 'back_page');
-
-// const question = new StatelessQuestion('quest', ctx => {
-//     bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}`);
-// });
+const del = new InlineKeyboard()
+    .text('Оброблено', 'call_del');
 
 module.exports = { menu, 
     tesla, 
     volkswagen, 
     honda, 
     other, 
-    call_back };
+    del };
