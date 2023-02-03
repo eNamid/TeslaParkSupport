@@ -1,15 +1,24 @@
-const fs = require('fs');
-const path = require('path');
-const { Bot, InputFile, webhookCallback, } = require("grammy");
-const { menu, tesla, volkswagen, honda, other, del, } = require('./button');
-const { StatelessQuestion } = require('@grammyjs/stateless-question');
-const { type } = require('os');
 const express = require('express');
+const {
+    Bot,
+    InputFile,
+    webhookCallback,
+} = require("grammy");
+const {
+    StatelessQuestion
+} = require('@grammyjs/stateless-question');
 const CyclicDb = require("@cyclic.sh/dynamodb");
 const db = CyclicDb("real-rose-macaw-hatCyclicDB");
+const {
+    menu,
+    tesla,
+    volkswagen,
+    honda,
+    other,
+    del,
+} = require('./button');
 
 const users = db.collection('users');
-
 const app = express();
 
 const photo = new InputFile("./imagine/img.jpg");
@@ -22,118 +31,118 @@ const bot = new Bot(process.env.TELEGRAM_TOKEN || "5882418082:AAHjEfquIghgXsE-Iw
 const BOT_DEVELOPER = 353785249; // ідентифікація розробника
 
 bot.use(async (ctx, next) => {
-  // Змінити контекстний об’єкт тут, встановивши конфігурацію.
-  ctx.config = {
-    botDeveloper: BOT_DEVELOPER,
-    isDeveloper: ctx.from?.id === BOT_DEVELOPER,
-  };
-  // Запуск інших обробників
-  await next();
+    // Змінити контекстний об’єкт тут, встановивши конфігурацію.
+    ctx.config = {
+        botDeveloper: BOT_DEVELOPER,
+        isDeveloper: ctx.from?.id === BOT_DEVELOPER,
+    };
+    // Запуск інших обробників
+    await next();
 });
 
 // Start Group
-bot.command ("start", async (ctx) => {
-  bot.api.sendPhoto(ctx.msg.chat.id,  photo, {
-  caption: "Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку, оберіть марку Вашого автомобіля👇",
-  reply_markup: menu,
-});
+bot.command("start", async (ctx) => {
+    bot.api.sendPhoto(ctx.msg.chat.id, photo, {
+        caption: "Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку, оберіть марку Вашого автомобіля👇",
+        reply_markup: menu,
+    });
 });
 
 bot.callbackQuery('back_page', async (ctx) => {
-  bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
-    type: 'photo',
-    media: photo,
-    caption: 'Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку, оберіть марку Вашого автомобіля👇',
-  }, {
-    reply_markup: menu,
-  });
+    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+        type: 'photo',
+        media: photo,
+        caption: 'Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку, оберіть марку Вашого автомобіля👇',
+    }, {
+        reply_markup: menu,
+    });
 });
 
 // Tesla Group
 bot.callbackQuery('call_tesla', async (ctx) => {
-  bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
-    type: 'photo',
-    media: tes,
-    caption: 'Яка проблема вас турбує?',
-  }, {
-    reply_markup: tesla,
-  });
+    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+        type: 'photo',
+        media: tes,
+        caption: 'Яка проблема вас турбує?',
+    }, {
+        reply_markup: tesla,
+    });
 });
 
 const question = new StatelessQuestion('quest', async ctx => {
-  const key = String(ctx.chat.id);
-  const user = await users.get(key);
-  if(user) {
-    const { message } = user.props;
-    bot.api.sendMessage(ctx.chat.id, 'Ваш запить вже обробляють, зачекайте будь ласка.');
-  }
-  else {
-     bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}`, {
-      reply_markup: del,
-     });
-  }
-  await users.set(key, {
-    message: ctx.msg.text,
-  })
+    bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}`, {
+        reply_markup: del,
+    });
 
-  console.log(user);
+    await users.set(ctx.msg.from.username, {
+        message: ctx.msg.text,
+    })
 });
 
 bot.use(question.middleware());
 
 bot.callbackQuery('call_oper', async (ctx) => {
-    question.replyWithMarkdown(ctx, 'Напишіть своє питання', { 
-      reply_markup: { force_reply: true },
-    });
+    const user = await users.get(ctx.msg.from.username);
+    if (user) {
+        bot.api.sendMessage(ctx.chat.id, 'Ваш запить вже обробляють, зачекайте будь ласка.');
+    } else {
+        question.replyWithMarkdown(ctx, 'Напишіть своє питання', {
+            reply_markup: {
+                force_reply: true
+            },
+        });
+    }
 });
 
 // Volkswagen Group
 bot.callbackQuery('call_volks', async (ctx) => {
-  bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
-    type: 'photo',
-    media: volk,
-    caption: 'Яка проблема вас турбує?',
-  }, {
-    reply_markup: volkswagen,
-  });
+    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+        type: 'photo',
+        media: volk,
+        caption: 'Яка проблема вас турбує?',
+    }, {
+        reply_markup: volkswagen,
+    });
 });
 
 // Honda Group
 bot.callbackQuery('call_honda', async (ctx) => {
-  bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
-    type: 'photo',
-    media: hon,
-    caption: 'Яка проблема вас турбує?',
-  }, {
-    reply_markup: honda,
-  });
+    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+        type: 'photo',
+        media: hon,
+        caption: 'Яка проблема вас турбує?',
+    }, {
+        reply_markup: honda,
+    });
 });
 
 // Other Group
 bot.callbackQuery('call_other', async (ctx) => {
-  bot.api.editMessageCaption(ctx.chat.id, ctx.msg.message_id, {
-    caption: 'Яка проблема вас турбує?',
-    reply_markup: other,
-  });
+    bot.api.editMessageCaption(ctx.chat.id, ctx.msg.message_id, {
+        caption: 'Яка проблема вас турбує?',
+        reply_markup: other,
+    });
 });
 
 bot.callbackQuery('call_del', async (ctx) => {
-  await users.delete(key);
-  bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, {
-    caption: `Звернення обробив ${ctx.msg.from.username}`,
-  })
+    const text = ctx.msg.text.split(' ');
+    const username = text.find('@').slice(-1);
+    console.log(username)
+
+    await users.delete(ctx.msg.from.username);
+    bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив ${ctx.msg.from.username}`)
 })
 
 if (process.env.NODE_ENV === "production") {
 
-  app.use(express.json());
-  app.use(webhookCallback(bot, "express"));
+    app.use(express.json());
+    app.use(webhookCallback(bot, "express"));
 
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Bot listening on port ${PORT}`);
-  });
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Bot listening on port ${PORT}`);
+    });
 } else {
- 
-  bot.start();
+
+    bot.start();
 }
