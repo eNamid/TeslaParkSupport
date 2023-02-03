@@ -130,9 +130,8 @@ bot.callbackQuery('call_del', async (ctx) => {
     .find(e => e.includes('@'))
     .slice(1);
 
-    console.log(username);
-
-    bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив ${ctx.msg.from.username}`)
+    bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив @${ctx.callbackQuery.from.username}`);
+    await users.delete(username);
 })
 
 if (process.env.NODE_ENV === "production") {
