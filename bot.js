@@ -82,7 +82,7 @@ const question = new StatelessQuestion('quest', async ctx => {
 bot.use(question.middleware());
 
 bot.callbackQuery('call_oper', async (ctx) => {
-    const user = await users.get(ctx.msg.from.username);
+    const user = await users.get(ctx.callbackQuery.from.username);
     if (user) {
         bot.api.sendMessage(ctx.chat.id, 'Ваш запить вже обробляють, зачекайте будь ласка.');
     } else {
@@ -126,9 +126,9 @@ bot.callbackQuery('call_other', async (ctx) => {
 
 bot.callbackQuery('call_del', async (ctx) => {
     const username = ctx.msg.text
-    .split(' ')
-    .find(e => e.includes('@'))
-    .slice(1);
+        .split(' ')
+        .find(e => e.includes('@'))
+        .slice(1);
 
     bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив @${ctx.callbackQuery.from.username}`);
     await users.delete(username);
