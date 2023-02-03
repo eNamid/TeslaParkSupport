@@ -129,7 +129,7 @@ bot.callbackQuery('call_del', async (ctx) => {
     const username = text.find('@').slice(-1);
     console.log(username)
 
-    await users.delete(ctx.msg.from.username);
+    await users.delete(username);
     bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив ${ctx.msg.from.username}`)
 })
 
