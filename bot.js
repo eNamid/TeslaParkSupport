@@ -16,8 +16,10 @@ const {
     honda,
     other,
     del,
+    servdel,
 } = require('./button');
 
+const profile = db.collection('profile');
 const users = db.collection('users');
 const app = express();
 
@@ -43,7 +45,7 @@ bot.use(async (ctx, next) => {
 // Start Group
 bot.command("start", async (ctx) => {
     bot.api.sendPhoto(ctx.msg.chat.id, photo, {
-        caption: "Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку, оберіть марку Вашого автомобіля👇",
+        caption: "Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку оберіть марку Вашого автомобіля👇",
         reply_markup: menu,
     });
 });
@@ -52,23 +54,13 @@ bot.callbackQuery('back_page', async (ctx) => {
     bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
         type: 'photo',
         media: photo,
-        caption: 'Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку, оберіть марку Вашого автомобіля👇',
+        caption: 'Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку оберіть марку Вашого автомобіля👇',
     }, {
         reply_markup: menu,
     });
 });
 
-// Tesla Group
-bot.callbackQuery('call_tesla', async (ctx) => {
-    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
-        type: 'photo',
-        media: tes,
-        caption: 'Яка проблема вас турбує?',
-    }, {
-        reply_markup: tesla,
-    });
-});
-
+// Operator inside Start Group
 const question = new StatelessQuestion('quest', async ctx => {
     bot.api.sendMessage(-1001884649683, ` Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}`, {
         reply_markup: del,
@@ -84,7 +76,7 @@ bot.use(question.middleware());
 bot.callbackQuery('call_oper', async (ctx) => {
     const user = await users.get(ctx.callbackQuery.from.username);
     if (user) {
-        bot.api.sendMessage(ctx.chat.id, 'Ваш запить вже обробляють, зачекайте будь ласка.');
+        bot.api.sendMessage(ctx.chat.id, 'Ваш запит вже обробляють, зачекайте, будь ласка.');
     } else {
         question.replyWithMarkdown(ctx, 'Напишіть своє питання', {
             reply_markup: {
@@ -92,6 +84,63 @@ bot.callbackQuery('call_oper', async (ctx) => {
             },
         });
     }
+});
+//////////////////////////////////////////////////Функція сортує по масиву слова, шукає нішу з @, таким чином отримує юзернейм в середині чату операторів////////////////////////////////////
+bot.callbackQuery('call_del', async (ctx) => {
+    const username = ctx.msg.text
+        .split(' ')
+        .find(e => e.includes('@'))
+        .slice(1);
+
+    bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив @${ctx.callbackQuery.from.username}`);
+    await users.delete(username);
+});
+
+// Service inside Start Group
+const service = new StatelessQuestion('service', async ctx => {
+    bot.api.sendMessage(-1001884649683, `${ctx.msg.from.first_name}(@${ctx.msg.from.username}) бажає зробити запис на сервіс з такою проблемою: ${ctx.msg.text}`, {
+        reply_markup: servdel,
+    });
+
+    await profile.set(ctx.msg.from.username, {
+        message: ctx.msg.text,
+    })
+});
+
+bot.use(service.middleware());
+
+bot.callbackQuery('call_service', async (ctx) => {
+    const user = await profile.get(ctx.callbackQuery.from.username);
+    if (user) {
+        bot.api.sendMessage(ctx.chat.id, 'Ваш запит вже обробляють, зачекайте, будь ласка.');
+    } else {
+        service.replyWithMarkdown(ctx, 'Що турбує вас у вашому авто?', {
+            reply_markup: {
+                force_reply: true
+            },
+        });
+    }
+});
+//////////////////////////////////////////////////Функція сортує по масиву слова, шукає нішу з @, таким чином отримує юзернейм в середині чату операторів////////////////////////////////////
+bot.callbackQuery('call_servdel', async (ctx) => {
+    const username = ctx.msg.text
+        .split(' ')
+        .find(e => e.includes('@'))
+        .slice(1);
+
+    bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Запит на запис до сервісу обробив @${ctx.callbackQuery.from.username}`);
+    await profile.delete(username);
+});
+
+// Tesla Group
+bot.callbackQuery('call_tesla', async (ctx) => {
+    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+        type: 'photo',
+        media: tes,
+        caption: 'Яка проблема вас турбує?',
+    }, {
+        reply_markup: tesla,
+    });
 });
 
 // Volkswagen Group
@@ -123,16 +172,6 @@ bot.callbackQuery('call_other', async (ctx) => {
         reply_markup: other,
     });
 });
-
-bot.callbackQuery('call_del', async (ctx) => {
-    const username = ctx.msg.text
-        .split(' ')
-        .find(e => e.includes('@'))
-        .slice(1);
-
-    bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив @${ctx.callbackQuery.from.username}`);
-    await users.delete(username);
-})
 
 if (process.env.NODE_ENV === "production") {
 
