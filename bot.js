@@ -19,7 +19,7 @@ const {
     servdel,
 } = require('./button');
 
-const profile = db.collection('profile');
+const service_user = db.collection('service_user');
 const users = db.collection('users');
 const app = express();
 
@@ -98,11 +98,11 @@ bot.callbackQuery('call_del', async (ctx) => {
 
 // Service inside Start Group
 const service = new StatelessQuestion('service', async ctx => {
-    bot.api.sendMessage(-1001884649683, `${ctx.msg.from.first_name}(@${ctx.msg.from.username}) бажає зробити запис на сервіс з такою проблемою: ${ctx.msg.text}`, {
+    bot.api.sendMessage(-1001884649683, `${ctx.msg.from.first_name} @${ctx.msg.from.username} бажає зробити запис на сервіс з такою проблемою: ${ctx.msg.text}`, {
         reply_markup: servdel,
     });
 
-    await profile.set(ctx.msg.from.username, {
+    await service_user.set(ctx.msg.from.username, {
         message: ctx.msg.text,
     })
 });
@@ -110,8 +110,8 @@ const service = new StatelessQuestion('service', async ctx => {
 bot.use(service.middleware());
 
 bot.callbackQuery('call_service', async (ctx) => {
-    const user = await profile.get(ctx.callbackQuery.from.username);
-    if (user) {
+    const profile_user = await service_user.get(ctx.callbackQuery.from.username);
+    if (profile_user) {
         bot.api.sendMessage(ctx.chat.id, 'Ваш запит вже обробляють, зачекайте, будь ласка.');
     } else {
         service.replyWithMarkdown(ctx, 'Що турбує вас у вашому авто?', {
@@ -123,13 +123,13 @@ bot.callbackQuery('call_service', async (ctx) => {
 });
 //////////////////////////////////////////////////Функція сортує по масиву слова, шукає нішу з @, таким чином отримує юзернейм в середині чату операторів////////////////////////////////////
 bot.callbackQuery('call_servdel', async (ctx) => {
-    const username = ctx.msg.text
+    const profile_username = ctx.msg.text
         .split(' ')
         .find(e => e.includes('@'))
         .slice(1);
 
     bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Запит на запис до сервісу обробив @${ctx.callbackQuery.from.username}`);
-    await profile.delete(username);
+    await service_user.delete(profile_username);
 });
 
 // Tesla Group
