@@ -13,10 +13,20 @@ const menu = new InlineKeyboard()
 
 //Tesla Group
 const tesla = new InlineKeyboard()
+    .text('Інструкції по автомобілю', 'call_tesla_manual').row()
     .text('Як зарядити авто дома?', 'call_charge_home').row()
     .text('Як зарядити авто в публічних місцях?', 'call_charge_public').row()
     .text('Додаток TESLA', 'call_app').row()
     .url('Як зарядити автомобіль?', 'https://youtu.be/wYeaMqij_vM').row()
+    .text('<<-- Головне меню -->>', 'back_page');
+
+const tesla_manual =  new InlineKeyboard()
+    .text('Model S 2021+', 'call_model_s').row()
+    .text('Model 3', 'call_model_3').row()
+    .text('Model X 2021+', 'call_model_x').row()
+    .text('Model Y', 'call_model_y').row()
+    .text('Model S 2012-2020', 'call_model_s2012').row()
+    .text('Model X 2015-2020', 'call_model_x2015').row()
     .text('<<-- Головне меню -->>', 'back_page');
 
 const charge_home = new InlineKeyboard()
@@ -67,6 +77,7 @@ const service = new InlineKeyboard()
 
 module.exports = { menu, 
     tesla,
+    tesla_manual,
     china_car, 
     volkswagen, 
     honda, 

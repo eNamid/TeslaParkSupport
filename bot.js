@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const {
     Bot,
     InputFile,
@@ -12,6 +13,7 @@ const db = CyclicDb("real-rose-macaw-hatCyclicDB");
 const {
     menu,
     tesla,
+    tesla_manual,
     volkswagen,
     honda,
     other,
@@ -27,7 +29,15 @@ const {
 const profiles = db.collection('profiles');
 const app = express();
 
-const photo = new InputFile("./imagine/img.jpg");
+const modelS = new InputFile('./manual/Tesla Model S 2021+ (en).pdf');
+const model3 = new InputFile('./manual/Tesla Model 3 (ru).pdf');
+const modelX = new InputFile('./manual/Tesla Model X 2021+ (en).pdf');
+const modelY = new InputFile('./manual/Tesla Model Y (ru).pdf');
+const modelS2012 = new InputFile('./manual/Tesla Model S (ru) 2012-2020.pdf');
+const modelX2015 = new InputFile('./manual/Tesla Model X (ru) 2015-2020.pdf');
+const teslaApp = new InputFile('./manual/TeslaApp.pdf');
+
+const photo = new InputFile('./imagine/img.jpg');
 const tes = new InputFile('./imagine/tes.jpg');
 const volk = new InputFile('./imagine/volk.jpg');
 const hon = new InputFile('./imagine/hon.jpg');
@@ -94,7 +104,6 @@ bot.callbackQuery('call_oper', async (ctx) => {
     }
 });
 
-// Користувач @${ctx.msg.from.username} відправив питання: ${ctx.msg.text}
 const question = new StatelessQuestion('quest', async ctx => {
     await profiles.set(String(ctx.chat.id), {
         isRequested: true,
@@ -136,6 +145,46 @@ bot.callbackQuery('call_tesla', async (ctx) => {
     }, {
         reply_markup: tesla,
     });
+});
+
+bot.callbackQuery('call_tesla_manual', async (ctx) => {
+    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id,  {
+        type: 'photo',
+        media: photo,
+        caption: 'Оберіть інструкцію яка вас цікавить.',
+    }, {
+        reply_markup: tesla_manual,
+    });
+});
+
+bot.callbackQuery('call_model_s', async (ctx) => {
+    bot.api.sendMessage(ctx.chat.id, 'Іструкція завантажується, зачекайте, будь ласка...')
+    fs.readFile(__dirname + modelS, ( err, file ) => {
+        bot.api.sendDocument(ctx.chat.id, modelS).then(() => {
+            bot.api.sendMessage(ctx.chat.id, 'Ваш файл завантажено!')
+        });
+    })
+    
+});
+
+bot.callbackQuery('call_model_3', async (ctx) => {
+    bot.api.sendDocument(ctx.chat.id, model3);
+});
+
+bot.callbackQuery('call_model_x', async (ctx) => {
+    bot.api.sendDocument(ctx.chat.id, modelX);
+});
+
+bot.callbackQuery('call_model_y', async (ctx) => {
+    bot.api.sendDocument(ctx.chat.id, modelY);
+});
+
+bot.callbackQuery('call_model_s2012', async (ctx) => {
+    bot.api.sendDocument(ctx.chat.id, modelS2012);
+});
+
+bot.callbackQuery('call_model_x2015', async (ctx) => {
+    bot.api.sendDocument(ctx.chat.id, modelX2015);
 });
 
 bot.callbackQuery('call_charge_home', async (ctx) => {
