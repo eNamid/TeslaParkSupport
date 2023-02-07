@@ -34,9 +34,6 @@ const charge_home = new InlineKeyboard()
 
 const charge_public = new InlineKeyboard()
     .text('<<-- Головне меню -->>', 'back_page');
-
-const tesla_app = new InlineKeyboard()
-    .text('<<-- Головне меню -->>', 'back_page');
     
 //China Group
 const china_car = new InlineKeyboard()
@@ -65,6 +62,9 @@ const ecoflow = new InlineKeyboard()
 const del = new InlineKeyboard()
     .text('Оброблено', 'call_del');
 
+const general = new InlineKeyboard()
+    .text('<<-- Головне меню -->>', 'back_page')
+
 const telephone = new Keyboard()
     .requestContact('Надати номер телефону');
 
@@ -72,7 +72,6 @@ const telephone = new Keyboard()
 const service = new InlineKeyboard()
     .text('Діагностика', 'call_diagnostics').row()
     .text('Технічне обслуговування', 'call_to').row()
-    .text('Шиномонтаж', 'call_wheels').row()
     .text('<<-- Головне меню -->>', 'back_page');
 
 module.exports = { menu, 
@@ -85,7 +84,7 @@ module.exports = { menu,
     ecoflow,
     del,
     service,
-    tesla_app,
     charge_home,
     charge_public,
-    telephone, };
+    telephone,
+    general };

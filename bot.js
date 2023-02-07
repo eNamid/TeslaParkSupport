@@ -19,11 +19,11 @@ const {
     other,
     del,
     service,
-    tesla_app,
     china_car,
     charge_home,
     charge_public,
     telephone,
+    general
 } = require('./button');
 
 const profiles = db.collection('profiles');
@@ -36,6 +36,7 @@ const modelY = new InputFile('./manual/Tesla_Model_Y_(ru).pdf');
 const modelS2012 = new InputFile('./manual/Tesla_Model_S_(ru)_2012-2020.pdf');
 const modelX2015 = new InputFile('./manual/Tesla_Model_X_(ru)_2015-2020.pdf');
 const teslaApp = new InputFile('./manual/TeslaApp.pdf');
+const eco = new InputFile('./imagine/eco.png');
 
 const photo = new InputFile('./imagine/img.jpg');
 const tes = new InputFile('./imagine/tes.jpg');
@@ -68,7 +69,148 @@ bot.command('delate', async (ctx) => {
     profiles.delete(String(ctx.chat.id));
 });
 
+bot.command('users', async (ctx) => {
+    const users = await profiles.get(String(ctx.msg.contact));
+    bot.api.sendMessage(ctx.chat.id, `База номерів телефону: ${users}`);
+    console.log(users);
+});
+
 // Operator inside Start Group   
+//TO (Технічний Огляд)
+
+bot.on("message:contact", async (ctx) => {
+    await profiles.set(String(ctx.chat.id), {
+        username: ctx.msg.from.username,
+        phone: ctx.msg.contact.phone_number,
+    });
+    TO.replyWithMarkdown(ctx, 'Опишіть, що вас турбує', {
+        reply_markup: {
+            force_reply: true
+        },
+    });
+});
+bot.callbackQuery('call_to', async (ctx) => {
+    const profile = await profiles.get(String(ctx.chat.id));
+    bot.api.deleteMessage(ctx.chat.id, ctx.msg.message_id);
+    if (profile && profile.props.phone) {
+        if(profile.props.isTO) {
+            bot.api.sendPhoto(ctx.chat.id, photo, {
+                caption: 'Ваш запит вже обробляють, зачекайте, будь ласка.',
+                reply_markup: general
+            });
+        } else {
+            TO.replyWithMarkdown(ctx, 'Опишіть, що вас турбує', {
+                reply_markup: {
+                    force_reply: true
+                },
+            });
+        }
+    } else {
+        bot.api.sendMessage(ctx.chat.id, 'Натисніть на кнопку', {
+            reply_markup: {
+                keyboard: telephone.build(),
+                one_time_keyboard: true,
+            }
+        }); 
+    }
+});
+
+const TO = new StatelessQuestion('to', async ctx => {
+    await profiles.set(String(ctx.chat.id), {
+        isTO: true,
+    });
+
+    const profile = await profiles.get(String(ctx.chat.id));
+
+    if (profile) {
+        const { phone, username } = profile.props;
+        bot.api.sendMessage(-1001884649683, `
+${ctx.chat.id}
+
+${phone}
+@${username}
+
+Відправив питання: ${ctx.msg.text}
+    `, {
+        reply_markup: del,
+    });
+    }
+    bot.api.sendPhoto(ctx.msg.chat.id, photo, {
+        caption: "Ваше звернення буде розглянуто найближчим часом, очікуйте дзвінка",
+        reply_markup: general,
+    });
+});
+
+bot.use(TO.middleware());
+
+//Diagnostics (Діагностика)
+bot.on("message:contact", async (ctx) => {
+    await profiles.set(String(ctx.chat.id), {
+        username: ctx.msg.from.username,
+        phone: ctx.msg.contact.phone_number,
+    });
+    diagnostics.replyWithMarkdown(ctx, 'Опишіть, що вас турбує', {
+        reply_markup: {
+            force_reply: true
+        },
+    });
+});
+bot.callbackQuery('call_diagnostics', async (ctx) => {
+    const profile = await profiles.get(String(ctx.chat.id));
+    bot.api.deleteMessage(ctx.chat.id, ctx.msg.message_id);
+    if (profile && profile.props.phone) {
+        if(profile.props.isDiagnostics) {
+            bot.api.sendPhoto(ctx.chat.id, photo, {
+                caption: 'Ваш запит вже обробляють, зачекайте, будь ласка.',
+                reply_markup: general
+            });
+        } else {
+            diagnostics.replyWithMarkdown(ctx, 'Опишіть, що вас турбує', {
+                reply_markup: {
+                    force_reply: true
+                },
+            });
+        }
+    } else {
+        bot.api.sendMessage(ctx.chat.id, 'Натисніть на кнопку', {
+            reply_markup: {
+                keyboard: telephone.build(),
+                one_time_keyboard: true,
+            }
+        }); 
+    }
+});
+
+const diagnostics = new StatelessQuestion('diagnos', async ctx => {
+    await profiles.set(String(ctx.chat.id), {
+        isDiagnostics: true,
+    });
+
+    const profile = await profiles.get(String(ctx.chat.id));
+
+    if (profile) {
+        const { phone, username } = profile.props;
+        bot.api.sendMessage(-1001884649683, `
+${ctx.chat.id}
+
+${phone}
+@${username}
+
+Відправив питання: ${ctx.msg.text}
+    `, {
+        reply_markup: del,
+    });
+    }
+    bot.api.sendPhoto(ctx.msg.chat.id, photo, {
+        caption: "Ваше звернення буде розглянуто найближчим часом, очікуйте дзвінка",
+        reply_markup: general,
+    });
+});
+
+bot.use(diagnostics.middleware());
+
+
+//Questions (Зробити запит)
 bot.on("message:contact", async (ctx) => {
     await profiles.set(String(ctx.chat.id), {
         username: ctx.msg.from.username,
@@ -80,14 +222,15 @@ bot.on("message:contact", async (ctx) => {
         },
     });
 });
-
 bot.callbackQuery('call_oper', async (ctx) => {
     const profile = await profiles.get(String(ctx.chat.id));
-    console.log(profile)
     bot.api.deleteMessage(ctx.chat.id, ctx.msg.message_id);
     if (profile && profile.props.phone) {
         if (profile.props.isRequested) {
-            bot.api.sendMessage(ctx.chat.id, 'Ваш запит вже обробляють, зачекайте, будь ласка.');
+            bot.api.sendPhoto(ctx.chat.id, photo, {
+                caption: 'Ваш запит вже обробляють, зачекайте, будь ласка.',
+                reply_markup: general
+            });
         } else {
             question.replyWithMarkdown(ctx, 'Напишіть своє питання', {
                 reply_markup: {
@@ -126,8 +269,8 @@ ${phone}
     });
     }
     bot.api.sendPhoto(ctx.msg.chat.id, photo, {
-        caption: "Доброго дня! \nВас вітає бот-помічник компанії Tesla Park \n \nДля початку оберіть марку Вашого автомобіля👇",
-        reply_markup: menu,
+        caption: "Ваше звернення буде розглянуто найближчим часом, очікуйте дзвінка",
+        reply_markup: general,
     });
 });
 
@@ -139,6 +282,8 @@ bot.callbackQuery('call_del', async (ctx) => {
     bot.api.editMessageText(ctx.chat.id, ctx.msg.message_id, `Звернення обробив @${ctx.callbackQuery.from.username}`);
     await profiles.set(String(chatId), {
         isRequested: false,
+        isDiagnostics: false,
+        isTO: false,
     });
 });
 
@@ -163,40 +308,34 @@ bot.callbackQuery('call_tesla_manual', async (ctx) => {
     });
 });
 
-bot.callbackQuery('call_model_s', async (ctx) => {
-    const message = await bot.api.sendMessage(ctx.chat.id, 'Іструкція завантажується, зачекайте, будь ласка...');
-    await bot.api.sendDocument(ctx.chat.id, modelS);
-    bot.api.deleteMessage(ctx.chat.id, message.message_id);
-});
-
-bot.callbackQuery('call_model_3', async (ctx) => {
-    const message = await bot.api.sendMessage(ctx.chat.id, 'Іструкція завантажується, зачекайте, будь ласка...');
-    await bot.api.sendDocument(ctx.chat.id, model3);
-    bot.api.deleteMessage(ctx.chat.id, message.message_id);
-});
-
-bot.callbackQuery('call_model_x', async (ctx) => {
-    const message = await bot.api.sendMessage(ctx.chat.id, 'Іструкція завантажується, зачекайте, будь ласка...');
-    await bot.api.sendDocument(ctx.chat.id, modelX);
-    bot.api.deleteMessage(ctx.chat.id, message.message_id);
-});
-
-bot.callbackQuery('call_model_y', async (ctx) => {
-    const message = await bot.api.sendMessage(ctx.chat.id, 'Іструкція завантажується, зачекайте, будь ласка...');
-    await bot.api.sendDocument(ctx.chat.id, modelY);
-    bot.api.deleteMessage(ctx.chat.id, message.message_id);
-});
-
-bot.callbackQuery('call_model_s2012', async (ctx) => {
-    const message = await bot.api.sendMessage(ctx.chat.id, 'Іструкція завантажується, зачекайте, будь ласка...');
-    await bot.api.sendDocument(ctx.chat.id, modelS2012);
-    bot.api.deleteMessage(ctx.chat.id, message.message_id);
-});
-
-bot.callbackQuery('call_model_x2015', async (ctx) => {
-    const message = await bot.api.sendMessage(ctx.chat.id, 'Іструкція завантажується, зачекайте, будь ласка...');
-    await bot.api.sendDocument(ctx.chat.id, modelX2015);
-    bot.api.deleteMessage(ctx.chat.id, message.message_id);
+bot.callbackQuery(['call_model_s', 'call_model_3', 'call_model_x', 'call_model_y', 'call_model_s2012', 'call_model_x2015', 'call_app'], async (ctx) => {
+    let  file = {}
+    switch (ctx.callbackQuery.data) {
+        case 'call_model_s':
+            file = modelS
+        break;
+        case 'call_model_3':
+            file = model3
+        break;
+        case 'call_model_x':
+            file = modelX
+        break;
+        case 'call_model_y':
+            file = modelY
+        break;
+        case 'call_model_s2012':
+            file = modelS2012
+        break;
+        case 'call_model_x2015':
+            file = modelX2015
+        break;
+        case 'call_app':
+            file = teslaApp
+        break;
+    }
+        const message = await bot.api.sendMessage(ctx.chat.id, 'Іструкція завантажується, зачекайте, будь ласка...');
+        await bot.api.sendDocument(ctx.chat.id, file);
+        bot.api.deleteMessage(ctx.chat.id, message.message_id);
 });
 
 bot.callbackQuery('call_charge_home', async (ctx) => {
@@ -263,6 +402,63 @@ bot.callbackQuery(['call_volks', 'call_honda'], async (ctx) => {
     });
 });
 
+//EcoFlow
+bot.callbackQuery('call_ecoflow', async (ctx) => {
+    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+        type: 'photo',
+        media: eco,
+        caption: `\n \n Каталог портативних джерел живлення в наявності: \n 
+    EcoFlow RIVER 2 
+    Ємкість: 256 Вт 
+    Потужність: 300 Вт (600Вт)
+    Вага: 3,5 кг
+
+    EcoFlow RIVER 2 Max
+    Ємкість: 512 Вт 
+    Потужність: 500 Вт (1000Вт)
+    Вага: 6 кг
+
+    EcoFlow RIVER Pro
+    Ємкість: 720 Вт 
+    Потужність: 600 Вт (1200Вт)
+    Вага: 7,6 кг
+
+    EcoFlow RIVER 2 Pro
+    Ємкість: 768 Вт 
+    Потужність: 800 Вт (1600Вт)
+    Вага: 7,5 кг
+
+    EcoFlow Delta 2
+    Ємкість: 1024 Вт 
+    Потужність: 1800 Вт (2700Вт)
+    Вага: 12 кг
+
+    EcoFlow Delta
+    Ємкість: 1280 Вт 
+    Потужність: 1800 Вт (3300Вт)
+    Вага: 14 кг
+
+    Bluetti EB3A
+    Ємкість: 268 Вт 
+    Потужність: 600 Вт (1200Вт)
+    Вага: 4,6 кг
+
+    Bluetti EB55
+    Ємкість: 537 Вт 
+    Потужність: 700 Вт
+    Вага: 7,5 кг
+
+    Bluetti EB70
+    Ємкість: 716 Вт 
+    Потужність: 1000 Вт
+    Вага: 9,7 кг
+
+    Бажаєте придбати? 
+    Звертайтесь за номером: +380971234567`
+    }, {
+        reply_markup: general
+    })
+});
 
 // Service Group
 bot.callbackQuery('call_service', async (ctx) => {
