@@ -407,6 +407,7 @@ bot.callbackQuery('call_ecoflow', async (ctx) => {
     bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
         type: 'photo',
         media: eco,
+        
         caption: `\n \n Каталог портативних джерел живлення в наявності: \n 
     EcoFlow RIVER 2 
     Ємкість: 256 Вт 
