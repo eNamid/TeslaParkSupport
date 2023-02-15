@@ -16,7 +16,8 @@ const tesla = new InlineKeyboard()
     .text('Інструкції по автомобілю', 'call_tesla_manual').row()
     .text('Як зарядити авто дома?', 'call_charge_home').row()
     .text('Як зарядити авто в публічних місцях?', 'call_charge_public').row()
-    .text('Додаток TESLA', 'call_app').row()
+    .text('Додаток TESLA інструкція', 'call_app')
+    .url('Додаток TESLA відео', 'https://youtu.be/IkfmvHHRfZg').row()
     .url('Як зарядити автомобіль?', 'https://youtu.be/wYeaMqij_vM').row()
     .text('<<-- Головне меню -->>', 'back_page');
 

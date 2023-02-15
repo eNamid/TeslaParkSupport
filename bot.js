@@ -10,7 +10,7 @@ const {
 } = require('@grammyjs/stateless-question');
 const CyclicDb = require("@cyclic.sh/dynamodb");
 const db = CyclicDb("real-rose-macaw-hatCyclicDB");
-const {
+const { 
     menu,
     tesla,
     tesla_manual,
@@ -26,6 +26,7 @@ const {
     general
 } = require('./button');
 
+const assort = db.collection('assort')
 const profiles = db.collection('profiles');
 const app = express();
 
@@ -69,15 +70,58 @@ bot.command('delate', async (ctx) => {
     profiles.delete(String(ctx.chat.id));
 });
 
-bot.command('users', async (ctx) => {
-    const users = await profiles.get(String(ctx.msg.contact));
-    bot.api.sendMessage(ctx.chat.id, `База номерів телефону: ${users}`);
-    console.log(users);
+bot.command('delete', async (ctx) => {
+    assort.delete();
 });
 
-// Operator inside Start Group   
-//TO (Технічний Огляд)
+const batteryDb = new StatelessQuestion('batteryDb', async (ctx) => {
+    let text = ctx.message.text.split(',');
+    let setDb = await assort.set(text[0], {
+        name: text[1],
+        capacity: text[2],
+        power: text[3],
+        weight: text[4],
+        price: text[5]
+    });
+    console.log(setDb);
+});
 
+bot.use(batteryDb.middleware());
+
+bot.command('addassort', async (ctx) => {
+    batteryDb.replyWithMarkdown(ctx, `Структура додавання до ассортименту: 
+    1. Введіть код товару (обов'язково пізля коду кома)
+    2. Введіть назву товару (обов'язково кома після назви)
+    3. Введіть ємкість (обов'язково кома після ємкості)
+    4. Введіть потужність (обов'язково кома після потужності)
+    5. Введіть ціну товару
+    Приклад: 1, EcoFlow 100500, 750 Вт, 100000 mAh, 29999 грн`);
+});
+
+bot.command('allProducts', async (ctx) => {
+    const battery = await assort.list();
+    const items = [];
+    for (const item of battery.results) {
+        const { name} = (await item.get()).props;
+        items.push({
+            id: item.key,
+            name
+        });
+    }
+    if (items.length > 0) {
+        const text = items.map((item) => {
+            return `
+Код товару: \`${item.id}\`
+${item.name.trim()}
+`
+        });
+        bot.api.sendMessage(ctx.chat.id, text.join(''), {
+            parse_mode: 'MarkdownV2'
+        });
+    }
+});
+
+//TO (Технічний Огляд)
 bot.on("message:contact", async (ctx) => {
     await profiles.set(String(ctx.chat.id), {
         username: ctx.msg.from.username,
@@ -401,64 +445,46 @@ bot.callbackQuery(['call_volks', 'call_honda'], async (ctx) => {
         reply_markup: opts.keyboard,
     });
 });
+bot.callbackQuery('call_accessories', async (ctx) => {
+    
+});
 
 //EcoFlow
 bot.callbackQuery('call_ecoflow', async (ctx) => {
-    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
-        type: 'photo',
-        media: eco,
-        
-        caption: `\n \n Каталог портативних джерел живлення в наявності: \n 
-    EcoFlow RIVER 2 
-    Ємкість: 256 Вт 
-    Потужність: 300 Вт (600Вт)
-    Вага: 3,5 кг
-
-    EcoFlow RIVER 2 Max
-    Ємкість: 512 Вт 
-    Потужність: 500 Вт (1000Вт)
-    Вага: 6 кг
-
-    EcoFlow RIVER Pro
-    Ємкість: 720 Вт 
-    Потужність: 600 Вт (1200Вт)
-    Вага: 7,6 кг
-
-    EcoFlow RIVER 2 Pro
-    Ємкість: 768 Вт 
-    Потужність: 800 Вт (1600Вт)
-    Вага: 7,5 кг
-
-    EcoFlow Delta 2
-    Ємкість: 1024 Вт 
-    Потужність: 1800 Вт (2700Вт)
-    Вага: 12 кг
-
-    EcoFlow Delta
-    Ємкість: 1280 Вт 
-    Потужність: 1800 Вт (3300Вт)
-    Вага: 14 кг
-
-    Bluetti EB3A
-    Ємкість: 268 Вт 
-    Потужність: 600 Вт (1200Вт)
-    Вага: 4,6 кг
-
-    Bluetti EB55
-    Ємкість: 537 Вт 
-    Потужність: 700 Вт
-    Вага: 7,5 кг
-
-    Bluetti EB70
-    Ємкість: 716 Вт 
-    Потужність: 1000 Вт
-    Вага: 9,7 кг
-
-    Бажаєте придбати? 
-    Звертайтесь за номером: +380971234567`
-    }, {
-        reply_markup: general
-    })
+    const battery = await assort.list();
+    const items = [];
+    for (const item of battery.results) {
+        const { name, capacity, power, weight, price } = (await item.get()).props;
+        items.push({
+            name, 
+            capacity,
+            power,
+            weight,
+            price
+        });
+    }
+    if (items.length > 0) {
+        const text = items.map((item) => {
+            return `
+${item.name.trim()}
+Ємкість: ${item.capacity} 
+Потужність: ${item.power}
+Вага: ${item.weight}
+Ціна: ${item.price}
+`
+        });
+        bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+            type: 'photo',
+            media: eco,
+            caption: '\n \n Каталог портативних джерел живлення в наявності: \n' + text.join('') + `
+Бажаєте придбати? 
+Звертайтесь за номером: +380971234567
+            `
+        }, {
+            reply_markup: general,
+            parse_mode: 'MarkdownV2'
+        });
+    }
 });
 
 // Service Group
