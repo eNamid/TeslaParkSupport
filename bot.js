@@ -14,6 +14,8 @@ const {
     menu,
     tesla,
     tesla_manual,
+    tesla_charge,
+    tesla_winter,
     volkswagen,
     honda,
     other,
@@ -26,7 +28,8 @@ const {
     general
 } = require('./button');
 
-const assort = db.collection('assort')
+const assort = db.collection('assort');
+const accessories = db.collection('accessories');
 const profiles = db.collection('profiles');
 const app = express();
 
@@ -68,57 +71,6 @@ bot.command("start", async (ctx) => {
 
 bot.command('delate', async (ctx) => {
     profiles.delete(String(ctx.chat.id));
-});
-
-bot.command('delete', async (ctx) => {
-    assort.delete();
-});
-
-const batteryDb = new StatelessQuestion('batteryDb', async (ctx) => {
-    let text = ctx.message.text.split(',');
-    let setDb = await assort.set(text[0], {
-        name: text[1],
-        capacity: text[2],
-        power: text[3],
-        weight: text[4],
-        price: text[5]
-    });
-    console.log(setDb);
-});
-
-bot.use(batteryDb.middleware());
-
-bot.command('addassort', async (ctx) => {
-    batteryDb.replyWithMarkdown(ctx, `Структура додавання до ассортименту: 
-    1. Введіть код товару (обов'язково пізля коду кома)
-    2. Введіть назву товару (обов'язково кома після назви)
-    3. Введіть ємкість (обов'язково кома після ємкості)
-    4. Введіть потужність (обов'язково кома після потужності)
-    5. Введіть ціну товару
-    Приклад: 1, EcoFlow 100500, 750 Вт, 100000 mAh, 29999 грн`);
-});
-
-bot.command('allProducts', async (ctx) => {
-    const battery = await assort.list();
-    const items = [];
-    for (const item of battery.results) {
-        const { name} = (await item.get()).props;
-        items.push({
-            id: item.key,
-            name
-        });
-    }
-    if (items.length > 0) {
-        const text = items.map((item) => {
-            return `
-Код товару: \`${item.id}\`
-${item.name.trim()}
-`
-        });
-        bot.api.sendMessage(ctx.chat.id, text.join(''), {
-            parse_mode: 'MarkdownV2'
-        });
-    }
 });
 
 //TO (Технічний Огляд)
@@ -188,17 +140,6 @@ ${phone}
 bot.use(TO.middleware());
 
 //Diagnostics (Діагностика)
-bot.on("message:contact", async (ctx) => {
-    await profiles.set(String(ctx.chat.id), {
-        username: ctx.msg.from.username,
-        phone: ctx.msg.contact.phone_number,
-    });
-    diagnostics.replyWithMarkdown(ctx, 'Опишіть, що вас турбує', {
-        reply_markup: {
-            force_reply: true
-        },
-    });
-});
 bot.callbackQuery('call_diagnostics', async (ctx) => {
     const profile = await profiles.get(String(ctx.chat.id));
     bot.api.deleteMessage(ctx.chat.id, ctx.msg.message_id);
@@ -255,17 +196,6 @@ bot.use(diagnostics.middleware());
 
 
 //Questions (Зробити запит)
-bot.on("message:contact", async (ctx) => {
-    await profiles.set(String(ctx.chat.id), {
-        username: ctx.msg.from.username,
-        phone: ctx.msg.contact.phone_number,
-    });
-    question.replyWithMarkdown(ctx, 'Напишіть своє питання', {
-        reply_markup: {
-            force_reply: true
-        },
-    });
-});
 bot.callbackQuery('call_oper', async (ctx) => {
     const profile = await profiles.get(String(ctx.chat.id));
     bot.api.deleteMessage(ctx.chat.id, ctx.msg.message_id);
@@ -328,6 +258,7 @@ bot.callbackQuery('call_del', async (ctx) => {
         isRequested: false,
         isDiagnostics: false,
         isTO: false,
+        isWinter: false
     });
 });
 
@@ -408,11 +339,91 @@ bot.callbackQuery('call_app', async (ctx) => {
     bot.api.deleteMessage(ctx.chat.id, message.message_id);
 });
 
+bot.callbackQuery([ 'call_tesla_charge', 'call_tesla_winter' ], async (ctx) => {
+    const opts = {
+        media: '',
+        caption: '',
+        reply_markup: ''
+    }
+    switch (ctx.callbackQuery.data) {
+        case 'call_tesla_charge':
+            opts.media = photo,
+            opts.caption = '',
+            opts.reply_markup = tesla_charge
+        break;
+        case 'call_tesla_winter':
+            opts.media = photo,
+            opts.caption = '',
+            opts.reply_markup = tesla_winter
+        break;
+    }
+    bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+        type: 'photo',
+        media: opts.media,
+        caption: opts.caption
+    }, {
+        reply_markup: opts.reply_markup
+    })
+});
+
+bot.callbackQuery('call_tesla_oper', async (ctx) => {
+    const profile = await profiles.get(String(ctx.chat.id));
+    bot.api.deleteMessage(ctx.chat.id, ctx.msg.message_id);
+    if (profile && profile.props.phone) {
+        if (profile.props.isWinter) {
+            bot.api.sendPhoto(ctx.chat.id, photo, {
+                caption: 'Ваш запит вже обробляють, зачекайте, будь ласка.',
+                reply_markup: general
+            });
+        } else {
+            winter.replyWithMarkdown(ctx, 'Напишіть своє питання', {
+                reply_markup: {
+                    force_reply: true
+                },
+            });
+        }   
+    } else {
+        bot.api.sendMessage(ctx.chat.id, 'Натисніть на кнопку', {
+            reply_markup: {
+                keyboard: telephone.build(),
+                one_time_keyboard: true,
+            }
+        }); 
+    }
+});
+
+const winter = new StatelessQuestion('winter', async ctx => {
+    await profiles.set(String(ctx.chat.id), {
+        isWinter: true,
+    });
+
+    const profile = await profiles.get(String(ctx.chat.id));
+
+    if (profile) {
+        const { phone, username } = profile.props;
+        bot.api.sendMessage(-1001884649683, `
+${ctx.chat.id}
+
+${phone}
+@${username}
+
+Відправив питання: ${ctx.msg.text}
+    `, {
+        reply_markup: del,
+    });
+    }
+    bot.api.sendPhoto(ctx.msg.chat.id, photo, {
+        caption: "Ваше звернення буде розглянуто найближчим часом, очікуйте дзвінка",
+        reply_markup: general,
+    });
+});
+
+bot.use(winter.middleware());
 //China Group
 bot.callbackQuery('call_china_car', async (ctx) => {
     bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
         type: 'photo',
-        media: tes,
+        media: photo,
         caption: 'Оберіть марку вашого авто.',
     }, {
         reply_markup: china_car,
@@ -445,11 +456,70 @@ bot.callbackQuery(['call_volks', 'call_honda'], async (ctx) => {
         reply_markup: opts.keyboard,
     });
 });
-bot.callbackQuery('call_accessories', async (ctx) => {
-    
-});
 
 //EcoFlow
+//Функція додавання ассортименту до кнопки EcoFlow
+const batteryDb = new StatelessQuestion('batteryDb', async (ctx) => {
+    let text = ctx.message.text.split(',');
+    let setDb = await assort.set(text[0], {
+        name: text[1],
+        capacity: text[2],
+        power: text[3],
+        weight: text[4],
+        price: text[5]
+    });
+    console.log(setDb);
+});
+
+bot.use(batteryDb.middleware());
+
+bot.command('addbattery', async (ctx) => {
+    batteryDb.replyWithMarkdown(ctx, `Структура додавання до ассортименту: 
+    1. Введіть код товару (обов'язково пізля коду кома)
+    2. Введіть назву товару (обов'язково кома після назви)
+    3. Введіть ємкість (обов'язково кома після ємкості)
+    4. Введіть потужність (обов'язково кома після потужності)
+    5. Введіть ціну товару
+    Приклад: 1, EcoFlow 100500, 750 Вт, 100000 mAh, 29999 грн`);
+});
+
+//Функція виводу ассортименту з кодом товару до кнопки EcoFlow для Адміна
+bot.command('allbattery', async (ctx) => {
+    const battery = await assort.list();
+    const items = [];
+    for (const item of battery.results) {
+        const { name} = (await item.get()).props;
+        items.push({
+            id: item.key,
+            name
+        });
+    }
+    if (items.length > 0) {
+        const text = items.map((item) => {
+            return `
+Код товару: \`${item.id}\`
+${item.name.trim()}
+`
+        });
+        bot.api.sendMessage(ctx.chat.id, text.join(''), {
+            parse_mode: 'MarkdownV2'
+        });
+    }
+});
+
+//Функція видалення ассортименту до кнопки EcoFlow
+const delbatteryDb = new StatelessQuestion('delbatteryDb', async (ctx) => {
+    let text = ctx.message.text; 
+    assort.delete(text);
+});
+
+bot.use(delbatteryDb.middleware());
+
+bot.command('delbattery', async (ctx) => {
+    delbatteryDb.replyWithMarkdown(ctx, `Введіть код товару для видалення:`);
+});
+
+//Хендлер виводу асортименту з кнопки EcoFlow для користувачів
 bot.callbackQuery('call_ecoflow', async (ctx) => {
     const battery = await assort.list();
     const items = [];
@@ -483,6 +553,95 @@ ${item.name.trim()}
         }, {
             reply_markup: general,
             parse_mode: 'MarkdownV2'
+        });
+    }
+});
+
+//Accessories 
+//Функція додавання ассортименту до кнопки Аксесуари
+const accessDb = new StatelessQuestion('AccessDb', async (ctx) => {
+    let text = ctx.message.text.split(',');
+    let setDb = await accessories.set(text[0], {
+        name: text[1],
+        price: text[2]
+    });
+    console.log(setDb);
+});
+
+bot.use(accessDb.middleware());
+
+bot.command('addacc', async (ctx) => {
+    accessDb.replyWithMarkdown(ctx, `Структура додавання до ассортименту:
+    1. Введіть код товару (обов'язково пізля коду кома)
+    2. Введіть назву товару (обов'язково кома після назви)
+    3. Введіть ціну товару
+    Приклад: 1, Парасолька, 200 грн
+    `);
+});
+
+//Функція виводу ассортименту з кодом товару до кнопки Аксесуари для Адміна
+bot.command('allacc', async (ctx) => {
+    const accessory = await accessories.list();
+    const items = [];
+    for (const item of accessory.results) {
+        const { name} = (await item.get()).props;
+        items.push({
+            id: item.key,
+            name
+        });
+    }
+    if (items.length > 0) {
+        const text = items.map((item) => {
+            return `
+Код товару: \`${item.id}\`
+${item.name.trim()}
+`
+        });
+        bot.api.sendMessage(ctx.chat.id, text.join(''), {
+            parse_mode: 'MarkdownV2'
+        });
+    }
+});
+
+//Функція видалення з ассортименту до кнопки Аксесуари
+const delaccessoriesDb = new StatelessQuestion('delaccessoriesDb', async (ctx) => {
+    let text = ctx.message.text; 
+    accessories.delete(text);
+});
+
+bot.use(delaccessoriesDb.middleware());
+
+bot.command('delacc', async (ctx) => {
+    delaccessoriesDb.replyWithMarkdown(ctx, `Введіть код товару для видалення:`);
+});
+
+//Хендлер виводу товару з кнопки Аксесуари для користувачів
+bot.callbackQuery('call_accessories', async (ctx) => {
+    const accessory = await accessories.list();
+    const items = [];
+    for (const item of accessory.results) {
+        const { name, price } = (await item.get()).props;
+        items.push({
+            name, 
+            price
+        });
+    }
+    if (items.length > 0) {
+        const text = items.map((item) => {
+            return `
+${item.name.trim()}
+Ціна: ${item.price}
+`
+        });
+        bot.api.editMessageMedia(ctx.chat.id, ctx.msg.message_id, {
+            type: 'photo',
+            media: photo,
+            caption: '\n \n Каталог аксесуарів в наявності: \n' + text.join('') + `
+Бажаєте придбати? 
+Звертайтесь за номером: +380971234567
+            `
+        }, {
+            reply_markup: general,
         });
     }
 });

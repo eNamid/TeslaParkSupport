@@ -14,11 +14,21 @@ const menu = new InlineKeyboard()
 //Tesla Group
 const tesla = new InlineKeyboard()
     .text('Інструкції по автомобілю', 'call_tesla_manual').row()
-    .text('Як зарядити авто дома?', 'call_charge_home').row()
-    .text('Як зарядити авто в публічних місцях?', 'call_charge_public').row()
+    .text('Все про зарядку автомобілів Tesla', 'call_tesla_charge').row()
+    .text('Зимове використання авто', 'call_tesla_winter').row()
     .text('Додаток TESLA інструкція', 'call_app')
     .url('Додаток TESLA відео', 'https://youtu.be/IkfmvHHRfZg').row()
+    .text('<<-- Головне меню -->>', 'back_page');
+
+const tesla_charge = new InlineKeyboard()
+    .text('Як зарядити авто дома?', 'call_charge_home').row()
+    .text('Як зарядити авто в публічних місцях?', 'call_charge_public').row()
     .url('Як зарядити автомобіль?', 'https://youtu.be/wYeaMqij_vM').row()
+    .text('<<-- Головне меню -->>', 'back_page');
+
+const tesla_winter = new InlineKeyboard()
+    .url('Tesla взимку', 'https://youtu.be/2O0ILA4fvUs').row()
+    .text('Виникли запитання? Залиште їх в запиті', 'call_tesla_oper').row()
     .text('<<-- Головне меню -->>', 'back_page');
 
 const tesla_manual =  new InlineKeyboard()
@@ -40,8 +50,8 @@ const charge_public = new InlineKeyboard()
 const china_car = new InlineKeyboard()
     .text('VOLKSWAGEN', 'call_volks').row()
     .text('HONDA', 'call_honda').row()
-    .text('Як зарядити авто дома?', 'call_charge_home').row()
-    .text('Як зарядити авто в публічних місцях?', 'call_charge_public').row()
+    .text('Як зарядити авто дома?', '').row()
+    .text('Як зарядити авто в публічних місцях?', '').row()
     .text('<<-- Головне меню -->>', 'back_page');
 
 const volkswagen = new InlineKeyboard()
@@ -49,15 +59,6 @@ const volkswagen = new InlineKeyboard()
 
 const honda = new InlineKeyboard()
     .text('<<-- Головне меню -->>', 'back_page');
-
-//Accessories Group
-const accessories = new InlineKeyboard()
-    .text('<<-- Головне меню -->>', 'back_page');
-
-//EcoFlow Group
-const ecoflow = new InlineKeyboard()
-    .text('<<-- Головне меню -->>', 'back_page');
-
 
 //General Group
 const del = new InlineKeyboard()
@@ -78,11 +79,11 @@ const service = new InlineKeyboard()
 module.exports = { menu, 
     tesla,
     tesla_manual,
+    tesla_charge,
+    tesla_winter,
     china_car, 
     volkswagen, 
     honda, 
-    accessories, 
-    ecoflow,
     del,
     service,
     charge_home,
